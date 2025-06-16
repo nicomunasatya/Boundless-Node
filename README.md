@@ -19,3 +19,22 @@ First, you need to know how **Boundless Prover market** actually works to realiz
 - I will update this github guide constantly, so you always have to check back here later and follow me on [X](https://x.com/0xMoei) for new updates.
 
 ---
+
+## Requirements
+### Hardware
+* CPU - 16 threads, reasonable single core boost performance (>3Ghz)
+* Memory - 32 GB
+* Disk - 100 GB NVME/SSD
+* GPU
+  * Minimum: one 8GB vRAM GPU
+  * Recommended to be competetive: 10x GPU with min 8GB vRAM
+  * Recomended GPU models are 4090, 5090 and L4.
+> * I've tested the new release with only a 80GB vRAM GPU, I'll update here when I just tested out lower GPUs.
+> * You better test it out with single GPUs by lowering your configurations later by reading the further sections.
+
+### Software
+* Supported: Ubuntu 20.04/22.04
+* No support: Ubuntu 24.04
+* If you are running on Windows os locally, install Ubuntu 22 WSL using this [Guide](https://github.com/0xmoei/Install-Linux-on-Windows)
+
+---
