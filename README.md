@@ -165,3 +165,28 @@ nvidia-smi -L
 ```
 lscpu
 ```
+### CPU & RAM check (Realtime):
+To see the status of your CPU and RAM.
+```bash
+htop
+```
+
+### GPU Check (Realtime):
+The best for real-time monitoring your GPUs in a seprated terminal while your prover is proving.
+```bash
+nvtop
+```
+
+---
+
+## Configure Prover
+### Single GPU:
+The default `compose.yml` file defines all services within Prover.
+* Default `compose.yml` only supporting single-GPU and default CPU, RAM utilization.
+* Edit `compose.yml` by this command:
+  ```bash
+  nano compose.yml
+  ```
+* The current `compose.yml` is set for `1` GPU by default, you can bypass editing it if you only have one GPU.
+* In single GPUs, you can increase the RAM & CPU of the `x-exec-agent-common` and `gpu_prove_agent0` services in `compose.yml` instead to maximize the utilization of your system
+
