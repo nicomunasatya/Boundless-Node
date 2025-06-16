@@ -142,3 +142,26 @@ boundless -h
 
 ---
 
+## System Hardware Check
+* In the beginning, to configure your Prover, You need to know what's your GPUs IDs (if multiple GPUs), CPU cores and RAM.
+* Also the following tools are best to monitor your hardware during proving.
+
+### GPU Check:
+* If your Nvidia driver and Cuda tools are installed succesfully, run the following command to see your GPUs status:
+```
+nvidia-smi
+```
+* You can now monitor Nvidia driver & Cuda Version, GPU utilization & memory usage.
+* In the image below, there are four GPUs with **0-3** IDs, you'll need it when adding GPU to your configuration.
+
+![image](https://github.com/user-attachments/assets/26c57f43-0fbf-4068-949c-b2ea31273998)
+
+* Check your system GPUs IDs (e.g. 0 through X):
+```bash
+nvidia-smi -L
+```
+
+### Number of CPU Cores and Threads:
+```
+lscpu
+```
