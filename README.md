@@ -59,3 +59,35 @@ First, you need to know how **Boundless Prover market** actually works to realiz
 Here is the step by step guide to Install and run your Prover smoothly, but please pay attention to these notes:
 * Read every single word of this guide, if you really want to know what you are doing.
 * There is an [Prover+Broker Optimization](https://github.com/0xmoei/boundless/blob/main/README.md#bento-prover--broker-optimizations) section where you need to read after setting up prover.
+
+## Dependecies
+### Install & Update Packages
+```bash
+apt update && apt upgrade -y
+apt install curl iptables build-essential git wget lz4 jq make gcc nano automake autoconf tmux htop nvme-cli libgbm1 pkg-config libssl-dev tar clang bsdmainutils ncdu unzip libleveldb-dev libclang-dev ninja-build -y
+```
+
+### Clone Boundless Repo
+```bash
+git clone https://github.com/boundless-xyz/boundless
+cd boundless
+git checkout release-0.10
+```
+
+### Install Dependecies
+To run a Boundless prover, you'll need the following dependencies:
+* Docker compose
+* GPU Drivers
+* Docker Nvidia Support
+* Rust programming language
+* `Just` command runner
+* CUDA Tollkit
+
+For a quick set up of Boundless dependencies on Ubuntu 22.04 LTS, you can run:
+```bash
+bash ./scripts/setup.sh
+```
+However, we need to install some dependecies manually:
+
+```console
+\\ Execute command lines one by one
