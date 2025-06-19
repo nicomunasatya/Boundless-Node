@@ -298,3 +298,96 @@ RPC providers I know they support `eth_newBlockFilter` and I recommend:
   * [Guide for ETH Sepolia](https://github.com/0xmoei/geth-prysm-node/blob/main/README.md)
 * Quicknode supports `eth_newBlockFilter` but was NOT compatible with prover somehow idk. It blew up my prover.
 
+### Base Mainnet
+* In this step I modify `.env.base`, you can replace it with any of above (Sepolia networks).
+* Currently, Base mainnet has very low demand of orders, you may want to go for Base Sepolia by modifying `.env.base-sepolia` or ETH Sepolia by modifying `.env.eth-sepolia`
+
+* Configure `.env.base` file:
+```bash
+nano .env.base
+```
+Add the following variables to the `.env.base`.
+* `export RPC_URL=""`:
+  * RPC has to be between `""`
+* `export PRIVATE_KEY=`: Add your EVM wallet private key
+
+![image](https://github.com/user-attachments/assets/3b41c3b7-8f79-4067-9117-41ac68b41946)
+
+* Inject `.env.base` to prover:
+```bash
+source .env.base
+```
+* After each terminal close or before any prover startup, you have to run this to inject the network before running `broker` or doing `Deposit` commands (both in next steps).
+
+### Optional: `.env.broker` with custom enviroment
+`.env.broker` is a custom environment file same as previous `.env` files but with more options to configure, you can also use it but you have to refer to [Deployments](https://docs.beboundless.xyz/developers/smart-contracts/deployments) page to replace contract addresses of each network.
+* I recommend to bypass using it, since you may want to switch between network sometimes. It's easier to swap among those above preserved .env files.
+
+* Create `.env.broker`:
+```bash
+cp .env.broker-template .env.broker
+```
+
+* Configure `.env.broker` file:
+```bash
+nano .env.broker
+```
+Add the following variables to the `.env.broker`.
+* `export RPC_URL=""`: To get Base network rpc url, Use third-parties .e.g Alchemy or paid ones.
+  * RPC has to be between `""`
+* `export PRIVATE_KEY=`: Add your EVM wallet private key
+* Find the value of following variables [here](https://docs.beboundless.xyz/developers/smart-contracts/deployments):
+  * `export BOUNDLESS_MARKET_ADDRESS=`
+  * `export SET_VERIFIER_ADDRESS=`
+  * `export VERIFIER_ADDRESS=` (add it to .env manually)
+  * `export ORDER_STREAM_URL=`
+ 
+* Inject `.env.broker` changes to prover:
+```
+source .env.broker
+```
+  * After each terminal close, you have to run this to inject the network before running `broker` or doing `Deposit` commands (both in next steps).
+
+---
+
+## Deposit Stake
+Provers will need to deposit` USDC` to the Boundless Market contract to use as stake when locking orders.
+
+Note that `USDC` has a different address on each network. Refer to the [Deployments page](https://docs.beboundless.xyz/developers/smart-contracts/deployments) for the addresses. USDC can be obtained on testnets from the [Circle Faucet](https://faucet.circle.com/). You can alsi [Bridge](https://superbridge.app/base-sepolia) USDC.
+
+**Add `boundless` CLI to bash:**
+```
+source ~/.bashrc
+```
+
+**Deposit Stake:**
+```
+boundless account deposit-stake STAKE_AMOUNT
+```
+* Deposit Stake Balance: `boundless account stake-balance`
+
+---
+
+##  Run Broker
+You can now start `broker` (which runs both `bento` + `broker` i.e. the full proving stack!):
+```bash
+just broker
+```
+Check the total proving logs:
+```bash
+just broker logs
+```
+Check the `broker` logs, which has the most important logs of your `order` lockings and fulfillments:
+```
+docker compose logs -f broker
+
+# For last 100 logs
+docker compose logs -fn 100
+```
+
+![image](https://github.com/user-attachments/assets/c7e8e343-ec4c-4202-b4ba-ef1cf04cedaa)
+
+* You may stuck at `Subscribed to offchain Order stream`, but it starts detecting orders soon.
+
+---
+
