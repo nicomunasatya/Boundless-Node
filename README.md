@@ -248,3 +248,29 @@ Boundless is comprised of two major components:
 
 ---
 
+## Run Bento
+To get started with a test proof on a new proving machine, let's run `Bento` to benchmark our GPUs:
+```bash
+just bento
+```
+* This will spin up `bento` without the `broker`.
+
+Check the logs :
+```bash
+just bento logs
+```
+
+Run a test proof:
+```bash
+RUST_LOG=info bento_cli -c 32
+```
+* If everything works well, you should see something like the following as `Job Done!`:
+
+![image](https://github.com/user-attachments/assets/a67fdfb0-3d22-4a4a-b47a-247567df0d45)
+
+* To check if all your GPUs are utilizing:
+  *  Increase `32` to `1024`/`2048`/`4096`
+  *  Open new terminal with `nvtop` command
+  *  Run the test proof and monitor your GPUs utilization.
+
+---
