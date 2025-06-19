@@ -190,3 +190,61 @@ The default `compose.yml` file defines all services within Prover.
 * The current `compose.yml` is set for `1` GPU by default, you can bypass editing it if you only have one GPU.
 * In single GPUs, you can increase the RAM & CPU of the `x-exec-agent-common` and `gpu_prove_agent0` services in `compose.yml` instead to maximize the utilization of your system
 
+### Multiple GPUs
+* 4 GPUs:
+To add more GPUs or modify CPU and RAM sepcified to each GPU, replace the current compose file with my [custom compose.yml](https://github.com/0xmoei/boundless/blob/main/compose.yml) with 4 custom GPUs
+
+* More/Less than 4 GPUs:
+Follow this [detailes step by step guide](https://github.com/0xmoei/boundless/blob/main/add-remove-gpu.md) to add or remove the number of 4 GPUs in my custom `compose.yml` file
+
+### Modify CPU/RAM of x-exec-agent-common
+* `x-exec-agent-common` service in your `compose.yml` is doing the preflight process of orders to estimate if prover can bid on them or not.
+* More exec agents will be able to preflight and prove more orders concurrently.
+* Increasing is from default value: `2` depends on how many concurrent proofs you want to allow.
+* You see smth like below code as your `x-exec-agent-common` service in your `compose.yml` where you can increase it's memory and cpu cores:
+```yml
+x-exec-agent-common: &exec-agent-common
+  <<: *agent-common
+  mem_limit: 4G
+  cpus: 3
+  environment:
+    <<: *base-environment
+    RISC0_KECCAK_PO2: ${RISC0_KECCAK_PO2:-17}
+  entrypoint: /app/agent -t exec --segment-po2 ${SEGMENT_SIZE:-21}
+```
+
+### Modify CPU/RAM of gpu_prove_agent
+* `gpu_prove_agent` service in your `compose.yml` handles proving the orders after they got locked by utilizing your GPUs.
+* In single GPUs, you can increase performance by increasing CPU/RAM of GPU agents.
+* The default number of its CPU and RAM is fine but if you have good system spec, you can increase them for each GPU.
+* You see smth like below code as your `gpu_prove_agentX` service in your `compose.yml` where you can increase the memory and cpu cores of each gpu agent.
+   ```yml
+     gpu_prove_agent0:
+       <<: *agent-common
+       runtime: nvidia
+       mem_limit: 4G
+       cpus: 4
+       entrypoint: /app/agent -t prove
+       deploy:
+         resources:
+           reservations:
+             devices:
+               - driver: nvidia
+                 device_ids: ['0']
+                 capabilities: [gpu]
+   ```
+* While the default CPU/RAM for each GPU is enough, for single GPUs, you can increase them to increase efiiciency, but don't maximize and always keep some CPU/RAML for other jobs.
+
+---
+
+**Note**: `SEGMENT_SIZE` of the prover is set to `21` by default in `x-exec-agent-common` service which applies on all GPUs, and `21` is compatible only with `>20GB vRAM` GPUs, if you have less vRAM, you have to modify it, you can read the [Segment Size](https://github.com/0xmoei/boundless/tree/main#segment-size-prover) section of the guide to modify it.
+
+---
+
+## Running Prover
+Boundless is comprised of two major components:
+* `Bento` is the local proving infrastructure. Bento will take the locked orders from `Broker`, prove them and return the result to `Broker`.
+* `Broker` interacts with the Boundless market. `Broker` can submit or request proves from the market.
+
+---
+
