@@ -500,3 +500,65 @@ Read more about them in [official doc](https://docs.beboundless.xyz/provers/brok
  
 ---
 
+# Safe Update or Stop Prover
+### 1. Check locked orders
+Ensure either through the `broker` logs or [through indexer page of your prover](https://explorer.beboundless.xyz/provers/) that your broker does not have any incomplete locked orders before stopping or update, othervise you might get slashed for your staked assets.
+
+* Optionally to not accept more order requests by your prover temporarily, you can set `max_concurrent_proofs` to `0`, wait for `locked` orders to be `fulfilled`, then go through the next step to stop the node.
+
+### 2. Stop the broker and optionally clean the database
+```bash
+# Optional, no need if you don't want to upgrade the node's repository
+just broker clean
+ 
+# Or stop the broker without cleaning volumes
+just broker down
+```
+
+### 3. Update to the new version
+See [releases](https://github.com/boundless-xyz/boundless/releases) for latest tag to use.
+```bash
+git checkout <new_version_tag>
+# Example: git checkout v0.10.0
+```
+
+### 4. Start the broker with the new version
+```bash
+just broker
+```
+
+---
+
+# Debugging
+## Error: Too many open files (os error 24)
+During the build process of `just broker`, you might endup to `Too many open files (os error 24)` error.
+
+### Fix:
+```
+nano /etc/security/limits.conf
+```
+* Add:
+```
+* soft nofile 65535
+* hard nofile 65535
+```
+
+```
+nano /lib/systemd/system/docker.service
+```
+* Add or modify the following under `[Service]` section.
+```
+LimitNOFILE=65535
+```
+
+```
+systemctl daemon-reload
+systemctl restart docker
+```
+
+* Now restart terminal and rerun your **inject network** command, then run `just broker`
+
+
+## Getting tens of `Locked` orders on prover's [explorer](https://explorer.beboundless.xyz/)
+* It's due to RPC issues, check your logs.
+* You can increase `txn_timeout = 45` in `broker.toml` file to increase the seconds of transactions confirmations.
