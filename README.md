@@ -391,3 +391,112 @@ docker compose logs -fn 100
 
 ---
 
+# Bento (Prover) & Broker Optimizations
+There are many factors to be optimized to win in provers competetion where you can read the official guide for [broker](https://docs.beboundless.xyz/provers/broker) or [prover](https://docs.beboundless.xyz/provers/performance-optimization)
+
+Here I simplified everything with detailed steps:
+
+## Segment Size (Prover)
+Larger segment sizes more proving (bento) performance, but require more GPU VRAM. To pick the right `SEGMENT_SIZE` for your GPU VRAM, see the [official performance optimization page](https://docs.beboundless.xyz/provers/performance-optimization#finding-the-maximum-segment_size-for-gpu-vram).
+
+![image](https://github.com/user-attachments/assets/ef566e27-ce69-4563-a035-87733827126d)
+
+### Setting SEGMENT_SIZE
+* `SEGMENT_SIZE` in `compose.yml` under the `x-exec-agent-common` service is `21`by default.
+* Also you can change the value of `SEGMENT_SIZE` in `.env.broker` before running the prover.
+* Note, when you set a number for `SEGMENT_SIZE` in env or default yml files, it sets that number for each GPU identically.
+* You can add `SEGMENT_SIZE` variable with its value to the preserved network `.env`s like `.env.base-sepolia`, etc if you are using them.
+* If you changed `SEGMENT_SIZE` in `.env.broker`, then head back to [network configuration](https://github.com/0xmoei/boundless/tree/main#configure-network) section to use `.env.broker` as your network configurationn.
+
+### Benchmarking Bento
+Install psql:
+```bash
+apt update
+apt install postgresql postgresql-client
+psql --version
+```
+
+1. Recommended: Benchmark by simulating an order id: (make sure Bento is running):
+```bash
+boundless proving benchmark --request-ids <IDS>
+```
+* You can use the order IDs listed [here](https://explorer.beboundless.xyz/orders)
+* You can add multiples by adding comma-seprated ones.
+* Recommended to pick a few requests of varying sizes and programs, biased towards larger proofs for a more representative benchmark.
+
+![image](https://github.com/user-attachments/assets/04ca61f7-a658-4cb8-b09b-928bbe4694d4)
+
+* As in the image above, the prover is estimated to handle ~430,000 cycles per second (~430 khz). 
+* Use a lower amount of the recommented `peak_prove_khz` in your `broker.toml` (I explain it more in the next step)
+
+> You can use `nvtop` command in a seprated terminal to check your GPU utilizations.
+
+2. Benchmark using Harness Test
+* Optionally you can benchmark GPUs by a ITERATION_COUNT:.
+```
+RUST_LOG=info bento_cli -c <ITERATION_COUNT>
+```
+`<ITERATION_COUNT>` is the number of times the synthetic guest is executed. A value of `4096` is a good starting point, however on smaller or less performant hosts, you may want to reduce this to `2048` or `1024` while performing some of your experiments. For functional testing, `32` is sufficient.
+
+* Check `khz` &  `cycles` proved in the harness test
+```
+bash scripts/job_status.sh JOB_ID
+```
+* replace `JOB_ID` with the one prompted to you when running a test.
+* Now you get the `hz` which has to be devided by 1000x to be in `khz` and the `cycles` it proved.
+* If got error `not_found`, it's cuz you didn't create `.env.broker` and the script is using the `SEGMENT_SIZE` value in `.env.broker` to query your Segment size, do `cp .env.broker-template .env.broker` to fix.
+
+---
+
+## Broker Optimization
+
+* Broker is one of the containers of the prover, it's not proving itself, it's for onchain activities, and initializing with orders like locking orders or setting amount of stake bids, etc.
+* `broker.toml` has the settings to configure how your broker interact on-chain and compete with other provers.
+
+Copy the template to the main config file:
+```bash
+cp broker-template.toml broker.toml
+```
+
+Edit broker.toml file:
+```bash
+nano broker.toml
+```
+* You can see an example of the official `broker.toml` [here](https://github.com/boundless-xyz/boundless/blob/main/broker-template.toml)
+
+### Increasing Lock-in Rate
+Once your broker is running, before the gpu-based prover gets into work, broker must compete with other provers to lock-in the orders. Here is how to optimize broker to lock-in faster than other provers:
+
+1. Decreasing the `mcycle_price` would tune your Broker to `bid` at lower prices for proofs.
+* Once an order detected, the broker runs a preflight execution to estimate how many `cycles` the request needs. As you see in the image, a prover proved orders with millions or thousands of cycles.
+* `mcycle_price` is actually price of a prover for proving each 1 million cycles. Final price = `mcycle_price` x `cycles`
+* The less you set `mcycle_price`, the higher chance you outpace other provers.
+
+![image](https://github.com/user-attachments/assets/fab9cc79-362f-4a43-a461-258ffe0bfc1a)
+
+
+* To get idea of what `mcycle_price` are other provers using, find an order in [explorer](https://explorer.beboundless.xyz/orders/0xc2db89b2bd434ceac6c74fbc0b2ad3a280e66db024d22ad3) with your prefered network, go to details page of the order and look for `ETH per Megacycle`
+
+![image](https://github.com/user-attachments/assets/6dd0c012-bff7-4a98-97ae-3cdfb288bc43)
+
+
+2. Increasing `lockin_priority_gas` to consume more gas to outrun other bidders. You might need to first remove `#` to uncomment it's line, then set the gas. It's based on Gwei.
+
+### Other settings in `broker.toml`
+Read more about them in [official doc](https://docs.beboundless.xyz/provers/broker#settings-in-brokertoml)
+* `peak_prove_khz`: Maximum number of cycles per second (in kHz) your proving backend can operate.
+  * You can set the `peak_prove_khz` by following the previous step [(Benchmarking Bento)](https://github.com/0xmoei/boundless/tree/main#benchmarking-bento)
+
+* `max_concurrent_proofs`: Maximum number of orders the can lock. Increasing it, increase the ability to lock more orders, but if you prover cannot prove them in the specified deadline, your stake assets will get slashed.
+  * When the numbers of running proving jobs reaches that limit, the system will pause and wait for them to get finished instead of locking more orders.
+  * It's set as `2` by default, and really depends on your GPU and your configuration, you have to test it out if you want to inscrease it.
+
+* `min_deadline`: Min seconds left before the deadline of the order to consider bidding on a request or not.
+  * Requesters set a deadline for their order, if a prover can't prove during this, it gets slashed.
+  * By setting the min deadline, your prover won't accept requests with a deadline less than that.
+  * As in the following image of an order in [explorer](https://explorer.beboundless.xyz/), the order fullfilled after the deadline and prover got slashed because of the delay in delivering
+ 
+ ![image](https://github.com/user-attachments/assets/bc497b61-01fe-451a-aeb1-de35efca56af)
+ 
+---
+
