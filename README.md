@@ -274,3 +274,27 @@ RUST_LOG=info bento_cli -c 32
   *  Run the test proof and monitor your GPUs utilization.
 
 ---
+
+## Configure Network
+Boundless is available on `Base Mainnet`, `Base Sepolia` and `Ethereum Sepolia`, marking the first time real funds will be used in Boundless.
+
+### Set Networks
+There are three `.env` files with the official configurations of each network (`.env.base`, `.env.base-sepolia`, `.env.eth-sepolia`).
+
+### Get RPC
+* According to what network you want to run your prover on, you'll need an RPC endpoint that supports `eth_newBlockFilter` event.
+  * You can search for `eth_newBlockFilter` in the documents of third-party RPC providers to see if they support it or not.
+
+RPC providers I know they support `eth_newBlockFilter` and I recommend:
+* [BlockPi](https://dashboard.blockpi.io/):
+  * Support free Base Mainnet, Base Sepolia. ETH sepolia costly as $49
+* [Alchemy](https://dashboard.alchemy.com/apps):
+  * Team recommends but I couldn't pass Cloudflare puzzle yet. Try it out yourself.
+* [Chainstack](https://console.chainstack.com/):
+  * You have to change the value of `lookback_blocks` from `300` to `0`, because chainstack's free plan doesn't support `eth_getlogs`, so you won't be able to check last 300 blocks for open orders at startup (which is not very important i believe)
+  * Check **Broker Optimization** section to know how to change `lookback_blocks` value in `broker.toml`
+* Run your own RPC node:
+  * This is actually the best way but costly in terms of needing ~550-650 GB Disk
+  * [Guide for ETH Sepolia](https://github.com/0xmoei/geth-prysm-node/blob/main/README.md)
+* Quicknode supports `eth_newBlockFilter` but was NOT compatible with prover somehow idk. It blew up my prover.
+
